@@ -22,7 +22,11 @@ namespace Intel.RealSense
             {
                 throw new ArgumentException($"Sensor does not support {nameof(Extension.PoseSensor)}");
             }
-            return Create<PoseSensor>(sensor.Handle);
+
+            //Transfer the Sensor handle to the PoseSensor
+            var poseSensor = Create<PoseSensor>(sensor.Handle);
+            sensor.m_instance.SetHandleAsInvalid();
+            return poseSensor;
         }
 
         public byte[] ExportLocalizationMap()
