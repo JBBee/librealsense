@@ -31,6 +31,11 @@ namespace Intel.RealSense
             this.Initialize();
         }
 
+        internal Device(Base.PooledObject other) : base(other)
+        {
+            this.Initialize();
+        }
+
         internal static T Create<T>(IntPtr ptr)
             where T : Device
         {
@@ -43,6 +48,12 @@ namespace Intel.RealSense
             var dev = ObjectPool.Get<T>(ptr);
             dev.Reset(ptr, deleter);
             return dev;
+        }
+
+        internal static T Create<T>(Device other)
+            where T : Device
+        {
+            return ObjectPool.Get<T>(other);
         }
 
         /// <summary>
@@ -94,7 +105,7 @@ namespace Intel.RealSense
         public T As<T>()
             where T : Device
         {
-            return Device.Create<T>(Handle);
+            return Device.Create<T>(this);
         }
     }
 }

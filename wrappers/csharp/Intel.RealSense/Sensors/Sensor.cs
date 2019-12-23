@@ -40,14 +40,18 @@ namespace Intel.RealSense
             where T : Sensor
         {
             object error;
-            return ObjectPool.Get<T>(other.Handle);
+            return ObjectPool.Get<T>(other);
         }
 
         internal Sensor(IntPtr sensor)
             : base(sensor, NativeMethods.rs2_delete_sensor)
         {
-            Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
-            Options = new OptionsList(Handle);
+            this.Initialize();
+        }
+
+        internal Sensor(Base.PooledObject other) : base(other)
+        {
+            this.Initialize();
         }
 
         protected override void Dispose(bool disposing)

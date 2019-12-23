@@ -45,7 +45,7 @@ namespace Intel.RealSense
                 throw new ArgumentException($"Device does not support {nameof(Extension.Record)}");
             }
 
-            return Device.Create<RecordDevice>(dev.Handle);
+            return Device.Create<RecordDevice>(dev);
         }
 
         /// <summary>

@@ -16,13 +16,16 @@ namespace Intel.RealSense
         internal PoseSensor(IntPtr ptr) : base(ptr)
         { }
 
+        internal PoseSensor(Base.PooledObject other) : base(other)
+        { }
+
         public static PoseSensor FromSensor(Sensor sensor)
         {
             if (!sensor.Is(Extension.PoseSensor))
             {
                 throw new ArgumentException($"Sensor does not support {nameof(Extension.PoseSensor)}");
             }
-            return Create<PoseSensor>(sensor.Handle);
+            return Create<PoseSensor>(sensor);
         }
 
         public byte[] ExportLocalizationMap()

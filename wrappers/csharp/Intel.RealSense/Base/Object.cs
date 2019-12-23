@@ -13,7 +13,7 @@ namespace Intel.RealSense.Base
     {
         // TODO: rename, kept for backwards compatiblity
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        internal readonly DeleterHandle m_instance;
+        internal DeleterHandle m_instance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Object"/> class.
@@ -29,6 +29,17 @@ namespace Intel.RealSense.Base
             }
 
             m_instance = new DeleterHandle(ptr, deleter);
+        }
+
+        protected Object(Object other)
+        {
+            if (other.m_instance == null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
+
+            m_instance = other.m_instance;
+            m_instance.Retain();
         }
 
         /// <summary>

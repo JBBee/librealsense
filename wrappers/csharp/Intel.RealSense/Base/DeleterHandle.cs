@@ -21,6 +21,7 @@ namespace Intel.RealSense.Base
     {
         private IntPtr handle;
         private Deleter deleter;
+        private int refCount;
 
         public IntPtr Handle => handle;
 
@@ -41,6 +42,11 @@ namespace Intel.RealSense.Base
             GC.SuppressFinalize(this);
         }
 
+        public void Retain()
+        {
+            refCount++;
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -54,8 +60,20 @@ namespace Intel.RealSense.Base
                 return;
             }
 
-            deleter?.Invoke(handle);
-            handle = IntPtr.Zero;
+            if (refCount > 0)
+            {
+                refCount--;
+                if (refCount == 0)
+                {
+                    deleter?.Invoke(handle);
+                    handle = IntPtr.Zero;
+                }
+            }
+            else
+            {
+                deleter?.Invoke(handle);
+                handle = IntPtr.Zero;
+            }
         }
 
         internal void Reset(IntPtr ptr)

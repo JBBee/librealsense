@@ -9,6 +9,7 @@ namespace Intel.RealSense
     using System.Linq.Expressions;
     using System.Reflection;
     using ObjectFactory = System.Func<System.IntPtr, object>;
+    using SharedHandleObjectFactory = System.Func<Base.PooledObject, object>;
     using PooledStack = System.Collections.Generic.Stack<Base.PooledObject>;
 
     /// <summary>
@@ -18,6 +19,7 @@ namespace Intel.RealSense
     {
         private static readonly Dictionary<Type, PooledStack> Pools = new Dictionary<Type, PooledStack>(TypeComparer.Default);
         private static readonly Dictionary<Type, ObjectFactory> Factories = new Dictionary<Type, ObjectFactory>(TypeComparer.Default);
+        private static readonly Dictionary<Type, SharedHandleObjectFactory> SharedHandleFactories = new Dictionary<Type, SharedHandleObjectFactory>(TypeComparer.Default);
 
         private class TypeComparer : IEqualityComparer<Type>
         {
@@ -71,7 +73,31 @@ namespace Intel.RealSense
             return lambda(ptr);
         }
 
-        private static object Get(Type t, IntPtr ptr)
+        private static object CreateInstance<T>(Base.PooledObject other)
+            where T : Base.PooledObject
+        {
+            SharedHandleObjectFactory factory;
+            if (SharedHandleFactories.TryGetValue(typeof(T), out factory))
+            {
+                return factory(other);
+            }
+
+            var ctorinfo = typeof(T).GetConstructor(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+                    null,
+                    new Type[] { typeof(T) },
+                    null);
+            var args = new ParameterExpression[] { Expression.Parameter(typeof(Base.PooledObject), "other") };
+            var lambda = Expression.Lambda<SharedHandleObjectFactory>(Expression.New(ctorinfo, args), args).Compile();
+            lock ((Factories as ICollection).SyncRoot)
+            {
+                SharedHandleFactories[typeof(T)] = lambda;
+            }
+
+            return lambda(other);
+        }
+
+        private static Base.PooledObject Get(Type t)
         {
             var stack = GetPool(t);
             int count;
@@ -87,13 +113,38 @@ namespace Intel.RealSense
                 {
                     obj = stack.Pop();
                 }
+                return obj;
+            }
+            return null;
+        }
 
+        private static object Get(Type t, IntPtr ptr)
+        {
+            Base.PooledObject obj = null;
+            if ((obj = Get(t)) != null)
+            {
                 obj.m_instance.Reset(ptr);
+                obj.Initialize();
+                return obj;
+
+            }
+
+            return CreateInstance(t, ptr);
+        }
+
+        private static object Get<T>(Type t, Base.PooledObject other)
+            where T : Base.PooledObject
+        {
+            Base.PooledObject obj = null;
+            if ((obj = Get(t)) != null)
+            {
+                obj.m_instance = other.m_instance;
+                obj.m_instance.Retain();
                 obj.Initialize();
                 return obj;
             }
 
-            return CreateInstance(t, ptr);
+            return CreateInstance<T>(other);
         }
 
         /// <summary>
@@ -111,6 +162,17 @@ namespace Intel.RealSense
             }
 
             return Get(typeof(T), ptr) as T;
+        }
+
+        public static T Get<T>(Base.PooledObject other)
+            where T : Base.PooledObject
+        {
+            if (other == null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
+
+            return Get<T>(typeof(T), other) as T;
         }
 
         /// <summary>

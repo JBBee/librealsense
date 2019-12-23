@@ -15,6 +15,10 @@ namespace Intel.RealSense.Base
         {
         }
 
+        protected PooledObject(PooledObject other)
+            : base(other)
+        { }
+
         internal abstract void Initialize();
 
         protected override void Dispose(bool disposing)

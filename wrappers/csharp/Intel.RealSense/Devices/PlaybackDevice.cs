@@ -31,7 +31,7 @@ namespace Intel.RealSense
                 throw new ArgumentException($"Device does not support {nameof(Extension.Playback)}");
             }
 
-            var playback = Device.Create<PlaybackDevice>(dev.Handle);
+            var playback = Device.Create<PlaybackDevice>(dev);
             playback.FileName = Marshal.PtrToStringAnsi(NativeMethods.rs2_playback_device_get_file_path(dev.Handle, out error));
             return playback;
         }
