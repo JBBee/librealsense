@@ -17,11 +17,10 @@ namespace Intel.RealSense.Base
     /// </summary>
     // TODO: CriticalFinalizerObject & CER
     //[DebuggerDisplay("{deleter?.Method.Name,nq}", Name = nameof(Deleter))]
-    internal sealed class DeleterHandle : IDisposable
+    internal class DeleterHandle : IDisposable
     {
         private IntPtr handle;
         private Deleter deleter;
-        private int refCount;
 
         public IntPtr Handle => handle;
 
@@ -42,38 +41,21 @@ namespace Intel.RealSense.Base
             GC.SuppressFinalize(this);
         }
 
-        public void Retain()
-        {
-            refCount++;
-        }
-
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        public void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (handle == IntPtr.Zero)
             {
                 return;
             }
 
-            if (refCount > 0)
-            {
-                refCount--;
-                if (refCount == 0)
-                {
-                    deleter?.Invoke(handle);
-                    handle = IntPtr.Zero;
-                }
-            }
-            else
-            {
-                deleter?.Invoke(handle);
-                handle = IntPtr.Zero;
-            }
+            deleter?.Invoke(handle);
+            handle = IntPtr.Zero;
         }
 
         internal void Reset(IntPtr ptr)

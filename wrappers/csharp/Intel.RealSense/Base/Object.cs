@@ -13,7 +13,7 @@ namespace Intel.RealSense.Base
     {
         // TODO: rename, kept for backwards compatiblity
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        internal DeleterHandle m_instance;
+        internal RefCountedDeleterHandle m_instance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Object"/> class.
@@ -28,7 +28,7 @@ namespace Intel.RealSense.Base
                 throw new ArgumentNullException(nameof(ptr));
             }
 
-            m_instance = new DeleterHandle(ptr, deleter);
+            m_instance = new RefCountedDeleterHandle(ptr, deleter);
         }
 
         protected Object(Object other)
@@ -68,6 +68,9 @@ namespace Intel.RealSense.Base
         protected virtual void Dispose(bool disposing)
         {
             m_instance.Dispose();
+
+            //Reset the instance ref to an invalid handle
+            m_instance = new RefCountedDeleterHandle();
         }
 
         internal void Reset(IntPtr ptr, Deleter deleter)
